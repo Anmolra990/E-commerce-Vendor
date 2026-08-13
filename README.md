@@ -46,22 +46,6 @@ cd ../frontend
 npm install
 ```
 
-## Environment variables
-
-Create `backend/.env` using [`backend/.env.example`](backend/.env.example) as a guide.
-
-```env
-PORT=5000
-MONGODB=mongodb://127.0.0.1:27017/ecommerce
-JWT_SECRET=replace-with-a-long-random-secret
-
-# Used by npm run seed:admin
-ADMIN_NAME=Site Admin
-ADMIN_EMAIL=admin@example.com
-ADMIN_PASSWORD=replace-with-a-strong-password
-```
-
-Never commit the real `.env` file or production credentials.
 
 ## Create the admin account
 
@@ -129,13 +113,6 @@ All API routes start with `/api`. Protected endpoints require `Authorization: Be
 
 When a vendor is frozen, they cannot manage products. Their products remain visible in the buyer storefront as out of stock, and the API prevents buyers from adding them to the cart or ordering them.
 
-## Production notes
 
-- Replace the frontend API base URL in `frontend/src/api/axios.js` with your deployed API URL.
-- Configure CORS in the backend for your deployed frontend domain.
-- Use strong unique values for `JWT_SECRET` and `ADMIN_PASSWORD`.
-- Store uploaded product images in persistent object storage for production deployments.
 
-## License
 
-This project is licensed under the ISC License.
