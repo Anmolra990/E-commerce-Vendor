@@ -135,23 +135,7 @@ function ProductDetails() {
             </p>
           )}
 
-          <div className="mt-6">
-
-            <label className="font-semibold">
-              Quantity
-            </label>
-
-            <input
-              type="number"
-              min="1"
-              max={unavailable ? 0 : product.stock}
-              value={quantity}
-              onChange={(e) => setQuantity(Number(e.target.value))}
-              disabled={unavailable}
-              className="border rounded p-2 w-24 ml-3 disabled:bg-gray-100"
-            />
-
-          </div>
+       
 
        
   <button

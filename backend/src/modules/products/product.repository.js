@@ -6,7 +6,7 @@ class ProductRepository {
   }
 
   async getAllProducts(includeInactive = false) {
-    // Products from frozen vendors stay visible; the service marks them unavailable.
+    
     return await Product.find({}).populate("vendorId", "name email isFrozen");
   }
 
