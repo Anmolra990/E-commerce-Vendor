@@ -103,7 +103,7 @@ class ProductService {
       ...productData,
       isAvailable: !vendorFrozen && !inactive && !outOfStock,
       unavailableReason: vendorFrozen
-        ? "This product is temporarily unavailable because its vendor is frozen."
+        ? "This product is temporarily unavailable because due to technical issues"
         : outOfStock
         ? "This product is out of stock."
         : inactive

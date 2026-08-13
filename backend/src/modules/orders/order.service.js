@@ -1,5 +1,6 @@
 import OrderRepository from "./order.repository.js";
 import Product from "../products/product.model.js";
+import cartRepository from "../cart/cart.repository.js";
 import AppError from "../../utils/AppError.js";
 
 class OrderService {
@@ -8,41 +9,78 @@ class OrderService {
       throw new AppError("Delivery address is required", 400);
     }
 
-    let orderItems = [];
-    let totalAmount = 0;
+    const requestedItems = new Map();
 
     for (const item of items) {
-      const product = await Product.findById(item.productId).populate("vendorId", "isFrozen");
-
-      if (!product) {
-        throw new AppError("Product not found", 404);
-      }
-
-      if (product.vendorId?.isFrozen || product.status !== "Active") {
-        throw new AppError(`\"${product.title}\" is currently unavailable.`, 400);
-      }
-
-      if (product.stock <= 0 || item.quantity > product.stock) {
-        throw new AppError(`\"${product.title}\" does not have enough stock.`, 400);
-      }
-
-      orderItems.push({
-        productId: product._id,
-        quantity: item.quantity,
-        price: product.price,
-      });
-
-      totalAmount += product.price * item.quantity;
+      const productId = item.productId.toString();
+      requestedItems.set(productId, (requestedItems.get(productId) || 0) + item.quantity);
     }
 
-    return await OrderRepository.createOrder({
-      userId,
-      items: orderItems,
-      totalAmount,
-      paymentMethod,
-      paymentStatus: paymentMethod === "COD" ? "Pending" : "Paid",
-      deliveryAddress,
-    });
+    const reservedStock = [];
+    let orderItems = [];
+    let totalAmount = 0;
+    let orderCreated = false;
+
+    try {
+      for (const [productId, quantity] of requestedItems) {
+        const product = await Product.findById(productId).populate("vendorId", "isFrozen");
+
+        if (!product) {
+          throw new AppError("Product not found", 404);
+        }
+
+        if (product.vendorId?.isFrozen || product.status !== "Active") {
+          throw new AppError(`\"${product.title}\" is currently unavailable.`, 400);
+        }
+
+        // Atomically reserve stock. This prevents two buyers from purchasing
+        // the last item at the same time.
+        const reservedProduct = await Product.findOneAndUpdate(
+          {
+            _id: productId,
+            status: "Active",
+            stock: { $gte: quantity },
+          },
+          { $inc: { stock: -quantity } },
+          { new: false }
+        );
+
+        if (!reservedProduct) {
+          throw new AppError(`\"${product.title}\" does not have enough stock.`, 400);
+        }
+
+        reservedStock.push({ productId: product._id, quantity });
+        orderItems.push({
+          productId: product._id,
+          quantity,
+          price: product.price,
+        });
+        totalAmount += product.price * quantity;
+      }
+
+      const order = await OrderRepository.createOrder({
+        userId,
+        items: orderItems,
+        totalAmount,
+        paymentMethod,
+        paymentStatus: paymentMethod === "COD" ? "Pending" : "Paid",
+        deliveryAddress,
+      });
+
+      orderCreated = true;
+      await cartRepository.clearCart(userId);
+      return order;
+    } catch (error) {
+   
+      if (!orderCreated) {
+        await Promise.all(
+          reservedStock.map(({ productId, quantity }) =>
+            Product.findByIdAndUpdate(productId, { $inc: { stock: quantity } })
+          )
+        );
+      }
+      throw error;
+    }
   }
 
   async getBuyerOrders(userId) {
