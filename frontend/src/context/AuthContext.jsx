@@ -1,64 +1,83 @@
 import { createContext, useContext, useEffect, useState } from "react";
 
 const AuthContext = createContext();
-const SESSION_DURATION = 10 * 60 * 1000;
 
 export function AuthProvider({ children }) {
-  const storedUser = localStorage.getItem("user");
 
   const [user, setUser] = useState(() => {
     try {
-      return storedUser ? JSON.parse(storedUser) : null;
+      const storedUser = sessionStorage.getItem("user");
+
+      return storedUser
+        ? JSON.parse(storedUser)
+        : null;
+
     } catch (error) {
-      localStorage.removeItem("user");
+      sessionStorage.removeItem("user");
       return null;
     }
   });
 
-  const [token, setToken] = useState(localStorage.getItem("token") || null);
+  const [token, setToken] = useState(
+    sessionStorage.getItem("token") || null
+  );
+
+
+  const login = (userData, userToken) => {
+
+    sessionStorage.setItem(
+      "user",
+      JSON.stringify(userData)
+    );
+
+    sessionStorage.setItem(
+      "token",
+      userToken
+    );
+
+    setUser(userData);
+    setToken(userToken);
+  };
+
 
   const logout = () => {
-    localStorage.removeItem("user");
-    localStorage.removeItem("token");
-    localStorage.removeItem("sessionExpiry");
+
+    sessionStorage.removeItem("user");
+    sessionStorage.removeItem("token");
+
     setUser(null);
     setToken(null);
   };
 
-  const login = (userData, authToken) => {
-    const expiryTime = Date.now() + SESSION_DURATION;
-
-    localStorage.setItem("user", JSON.stringify(userData));
-    localStorage.setItem("token", authToken);
-    localStorage.setItem("sessionExpiry", expiryTime.toString());
-
+  const updateUser = (userData) => {
+    sessionStorage.setItem("user", JSON.stringify(userData));
     setUser(userData);
-    setToken(authToken);
   };
 
-  useEffect(() => {
-    const savedUser = localStorage.getItem("user");
-    const savedToken = localStorage.getItem("token");
-    const sessionExpiry = Number(localStorage.getItem("sessionExpiry") || 0);
 
-    if (savedUser && savedToken && Date.now() < sessionExpiry) {
-      setUser(JSON.parse(savedUser));
-      setToken(savedToken);
-    } else {
-      logout();
+  useEffect(() => {
+
+    const savedUser = sessionStorage.getItem("user");
+    const savedToken = sessionStorage.getItem("token");
+
+    if (savedUser && savedToken) {
+
+      try {
+        setUser(JSON.parse(savedUser));
+        setToken(savedToken);
+
+      } catch (error) {
+
+        sessionStorage.removeItem("user");
+        sessionStorage.removeItem("token");
+
+        setUser(null);
+        setToken(null);
+      }
     }
+
   }, []);
 
-  useEffect(() => {
-    if (!user || !token) return;
-
-    const timeout = window.setTimeout(() => {
-      logout();
-      window.location.href = "/login";
-    }, SESSION_DURATION);
-
-    return () => window.clearTimeout(timeout);
-  }, [user, token]);
 
   return (
     <AuthContext.Provider
@@ -67,11 +86,13 @@ export function AuthProvider({ children }) {
         token,
         login,
         logout,
+        updateUser,
       }}
     >
       {children}
     </AuthContext.Provider>
   );
 }
+
 
 export const useAuth = () => useContext(AuthContext);

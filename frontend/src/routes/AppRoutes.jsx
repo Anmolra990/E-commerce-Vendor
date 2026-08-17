@@ -2,13 +2,14 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 
 import Login from "../pages/auth/Login";
 import Register from "../pages/auth/Register";
+import VendorRegistration from "../pages/auth/VendorRegistration";
 
 import Home from "../pages/buyer/Home";
 import ProductDetails from "../pages/buyer/ProductDetails";
 import Cart from "../pages/buyer/Cart";
 import Checkout from "../pages/buyer/Checkout";
 import Orders from "../pages/buyer/Orders";
-import BuyerDashboard from "../pages/buyer/Dashboard";
+
 
 import VendorDashboard from "../pages/vendor/Dashboard";
 import VendorProducts from "../pages/vendor/Products";
@@ -21,6 +22,7 @@ import Profile from "../pages/Profile";
 
 import ProtectedRoute from "../components/ProtectedRoute";
 import RoleRoute from "../components/RoleRoute";
+
 
 function AppRoutes() {
   return (
@@ -37,9 +39,9 @@ function AppRoutes() {
 
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+        <Route path="/vendor-registration" element={<VendorRegistration/>} />
 
 
-        <Route path="/buyer" element={<BuyerDashboard />} />
 
         <Route path="/product/:id" element={<ProductDetails />} />
 

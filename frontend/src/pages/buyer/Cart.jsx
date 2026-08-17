@@ -15,9 +15,7 @@ function Cart() {
     fetchCart();
   }, []);
 
-  // =========================
-  // FETCH CART
-  // =========================
+ 
   const fetchCart = async () => {
     try {
       const res = await API.get("/cart");
@@ -33,17 +31,15 @@ function Cart() {
     }
   };
 
-  // =========================
-  // UPDATE QUANTITY
-  // =========================
+ 
   const updateQuantity = async (productId, quantity, stock) => {
     try {
-      // Prevent quantity below 1
+   
       if (quantity < 1) {
         quantity = 1;
       }
 
-      // Prevent quantity above stock
+
       if (quantity > stock) {
         quantity = stock;
       }
@@ -63,9 +59,7 @@ function Cart() {
     }
   };
 
-  // =========================
-  // REMOVE ITEM
-  // =========================
+ 
   const removeItem = async (productId) => {
     try {
       await API.delete(`/cart/${productId}`);
@@ -81,9 +75,7 @@ function Cart() {
     }
   };
 
-  // =========================
-  // TOTAL PRICE
-  // =========================
+
   const total =
     cart?.items?.reduce((sum, item) => {
       const price = item.productId?.price || 0;

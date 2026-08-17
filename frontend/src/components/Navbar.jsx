@@ -32,7 +32,7 @@ function Navbar({ cartCount = 0 }) {
         {/* Desktop Navigation Links */}
         <nav className="hidden md:flex items-center gap-1 text-sm font-semibold">
           <Link
-            to="/buyer"
+            to="/home"
             className={`px-4 py-2 rounded-xl transition-colors ${
               isActive("/buyer")
                 ? "bg-blue-50 text-blue-600"
@@ -185,7 +185,7 @@ function Navbar({ cartCount = 0 }) {
           )}
 
           <Link
-            to="/buyer"
+            to="/home"
             onClick={() => setMobileMenuOpen(false)}
             className="block px-3 py-2 rounded-lg text-sm font-semibold text-slate-700 hover:bg-slate-100"
           >

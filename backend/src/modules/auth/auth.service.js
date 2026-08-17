@@ -63,6 +63,42 @@ class AuthService {
     };
   }
 
+  async updateProfile(userId, profileData) {
+    const user = await authRepository.findUserById(userId);
+
+    if (!user) {
+      throw new AppError("User not found", 404);
+    }
+
+    user.name = profileData.name;
+    await authRepository.saveUser(user);
+
+    return this.getProfile(user);
+  }
+
+
+  async registerVendor(data) {
+  const { name, email, password } = data;
+
+  const existingUser =
+    await authRepository.findUserByEmail(email);
+
+  if (existingUser) {
+    throw new AppError("Email already registered", 400);
+  }
+
+  const hashedPassword = await bcrypt.hash(password, 10);
+
+  const user = await authRepository.createUser({
+    name,
+    email,
+    password: hashedPassword,
+    role: "vendor",
+  });
+
+  return user;
+}
+
   async addAddress(userId, addressData) {
     const user = await authRepository.findUserById(userId);
     const isFirstAddress = user.addresses.length === 0;

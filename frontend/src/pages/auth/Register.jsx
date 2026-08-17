@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import toast from "react-hot-toast";
 import API from "../../api/axios";
 
 function Register() {
@@ -9,11 +10,9 @@ function Register() {
     name: "",
     email: "",
     password: "",
-    role: "buyer",
   });
 
   const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState("");
 
   const handleChange = (e) => {
     setFormData((prev) => ({
@@ -26,21 +25,57 @@ function Register() {
     e.preventDefault();
 
     setLoading(true);
-    setMessage("");
 
     try {
-        console.log(formData);
+      console.log("REGISTER DATA:", formData);
+
+      // Backend handles validation
       const res = await API.post("/auth/register", formData);
 
-      setMessage(res.data.message || "Registration successful");
+      console.log("REGISTER RESPONSE:", res.data);
 
+      // Success toast
+      toast.success(
+        res.data.message || "Registration successful"
+      );
+
+      // Go to login
       setTimeout(() => {
         navigate("/login");
       }, 1500);
+
     } catch (err) {
-      setMessage(
-        err.response?.data?.message || "Registration failed"
-      );
+      console.log("REGISTER ERROR:", err.response?.data);
+
+      /*
+        Backend validation response:
+
+        {
+          success: false,
+          errors: [
+            {
+              msg: "Name is required",
+              path: "name"
+            }
+          ]
+        }
+      */
+
+      if (err.response?.data?.errors?.length) {
+
+        // Show every backend validation error
+        err.response.data.errors.forEach((error) => {
+          toast.error(error.msg);
+        });
+
+      } else {
+        // Normal backend error
+        toast.error(
+          err.response?.data?.message ||
+          "Registration failed"
+        );
+      }
+
     } finally {
       setLoading(false);
     }
@@ -48,22 +83,23 @@ function Register() {
 
   return (
     <main className="min-h-screen flex items-center justify-center bg-slate-100">
+
       <div className="w-full max-w-md bg-white shadow-xl rounded-xl p-8">
 
         <h1 className="text-3xl font-bold text-center text-blue-600 mb-6">
           Register
         </h1>
 
-        {message && (
-          <div className="mb-4 p-3 rounded bg-blue-100 text-blue-700">
-            {message}
-          </div>
-        )}
+        <form
+          onSubmit={handleSubmit}
+          className="space-y-5"
+        >
 
-        <form onSubmit={handleSubmit} className="space-y-5">
-
+          {/* Name */}
           <div>
-            <label className="block mb-2 font-medium">Name</label>
+            <label className="block mb-2 font-medium">
+              Name
+            </label>
 
             <input
               type="text"
@@ -71,13 +107,15 @@ function Register() {
               value={formData.name}
               onChange={handleChange}
               placeholder="Enter Name"
-              required
-              className="w-full border rounded-lg p-3"
+              className="w-full border rounded-lg p-3 outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
 
+          {/* Email */}
           <div>
-            <label className="block mb-2 font-medium">Email</label>
+            <label className="block mb-2 font-medium">
+              Email
+            </label>
 
             <input
               type="email"
@@ -85,13 +123,15 @@ function Register() {
               value={formData.email}
               onChange={handleChange}
               placeholder="Enter Email"
-              required
-              className="w-full border rounded-lg p-3"
+              className="w-full border rounded-lg p-3 outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
 
+          {/* Password */}
           <div>
-            <label className="block mb-2 font-medium">Password</label>
+            <label className="block mb-2 font-medium">
+              Password
+            </label>
 
             <input
               type="password"
@@ -99,34 +139,22 @@ function Register() {
               value={formData.password}
               onChange={handleChange}
               placeholder="Enter Password"
-              required
-              className="w-full border rounded-lg p-3"
+              className="w-full border rounded-lg p-3 outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
 
-          <div>
-            <label className="block mb-2 font-medium">Role</label>
-
-            <select
-              name="role"
-              value={formData.role}
-              onChange={handleChange}
-              className="w-full border rounded-lg p-3"
-            >
-              <option value="buyer">Buyer</option>
-              <option value="vendor">Vendor</option>
-            </select>
-          </div>
-
+          {/* Register */}
           <button
+            type="submit"
             disabled={loading}
-            className="w-full bg-blue-600 text-white p-3 rounded-lg hover:bg-blue-700"
+            className="w-full bg-blue-600 text-white p-3 rounded-lg hover:bg-blue-700 disabled:bg-gray-400"
           >
             {loading ? "Registering..." : "Register"}
           </button>
 
         </form>
 
+        {/* Login */}
         <p className="mt-5 text-center">
           Already have an account?
 
@@ -138,7 +166,20 @@ function Register() {
           </Link>
         </p>
 
+        {/* Vendor Registration */}
+        <p className="mt-5 text-center text-gray-600">
+          Want to sell products?
+
+          <Link
+            to="/vendor-registration"
+            className="text-blue-600 ml-2 font-semibold hover:underline"
+          >
+            Register as Vendor
+          </Link>
+        </p>
+
       </div>
+
     </main>
   );
 }

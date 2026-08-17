@@ -8,6 +8,9 @@ import {
 
 import validate from "../../middlewares/validate.middleware.js";
 import authMiddleware from "../../middlewares/authMiddleware.js";
+import authorize from "../../middlewares/roleMiddleware.js";
+import validateWithZod from "../../middlewares/zod.middleware.js";
+import { updateProfileSchema } from "./profile.schema.js";
 
 const router = express.Router();
 
@@ -19,6 +22,13 @@ router.post(
 );
 
 router.post(
+  "/register/vendor",
+  registerValidator,
+  validate,
+  authController.registerVendor
+);
+
+router.post(
   "/login",
   loginValidator,
   validate,
@@ -26,6 +36,14 @@ router.post(
 );
 
 router.get("/profile", authMiddleware, authController.getProfile);
+
+router.put(
+  "/profile",
+  authMiddleware,
+  authorize("buyer", "vendor"),
+  validateWithZod(updateProfileSchema),
+  authController.updateProfile
+);
 
 router.post("/addresses", authMiddleware, addressValidator, validate, authController.addAddress);
 

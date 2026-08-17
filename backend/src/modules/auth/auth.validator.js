@@ -2,21 +2,20 @@
 
 export const registerValidator = [
   body("name")
+    .trim()
     .notEmpty()
     .withMessage("Name is required"),
 
   body("email")
+    .trim()
     .isEmail()
     .withMessage("Please enter a valid email"),
 
   body("password")
     .isLength({ min: 6 })
     .withMessage("Password must be at least 6 characters"),
-
-  body("role")
-    .isIn(["admin", "vendor", "buyer"])
-    .withMessage("Role must be admin, vendor or buyer"),
 ];
+
 
 export const loginValidator = [
   body("email")
