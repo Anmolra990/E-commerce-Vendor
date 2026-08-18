@@ -104,7 +104,7 @@ function ProductDetails() {
           alt={product.title}
           onError={(e) => {
             e.target.onerror = null;
-            e.target.src = defaultImage;
+            // e.target.src = defaultImage;
           }}
           className="rounded-xl shadow"
         />

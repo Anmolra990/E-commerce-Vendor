@@ -2,14 +2,14 @@ import { useState } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import API from "../../api/axios";
 import { useAuth } from "../../context/AuthContext";
-
-import { toast, ToastContainer } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
+import { useToast } from "../../context/ToastContext";
 
 function Login() {
   const navigate = useNavigate();
   const location = useLocation();
+
   const { login } = useAuth();
+  const toast = useToast();
 
   const [formData, setFormData] = useState({
     email: "",
@@ -33,7 +33,7 @@ function Login() {
     setLoading(true);
 
     try {
-      // Send login data to backend
+      // Send directly to backend
       const res = await API.post("/auth/login", formData);
 
       console.log("LOGIN RESPONSE:", res.data);
@@ -41,13 +41,13 @@ function Login() {
       const user = res.data.data.user;
       const token = res.data.data.token;
 
-      // Save authentication
       login(user, token);
 
-      // Success toast
-      toast.success("Login successful!");
+      // Message can also come from backend
+      toast.success(
+        res.data.message || "Login successful"
+      );
 
-      // Redirect according to role
       if (user.role === "admin") {
         navigate("/admin");
       } else if (user.role === "vendor") {
@@ -62,31 +62,21 @@ function Login() {
 
       const responseData = err.response?.data;
 
-      /*
-        Backend validation response:
+      // BACKEND VALIDATION ERRORS
+      if (
+        responseData?.errors &&
+        responseData.errors.length > 0
+      ) {
+        // Display backend validation message
+        toast.error(responseData.errors[0].msg);
 
-        {
-          success: false,
-          errors: [
-            {
-              msg: "Please enter a valid email"
-            }
-          ]
-        }
-      */
-
-      if (responseData?.errors?.length > 0) {
-        // Get first backend validation error
-        const validationMessage = responseData.errors[0].msg;
-
-        toast.error(validationMessage);
-      } else {
-        // Login error such as:
-        // Invalid email or password
-        toast.error(
-          responseData?.message || "Login failed"
-        );
+        return;
       }
+
+      // BACKEND NORMAL ERROR
+      toast.error(
+        responseData?.message || "Login failed"
+      );
 
     } finally {
       setLoading(false);
@@ -95,16 +85,6 @@ function Login() {
 
   return (
     <main className="min-h-screen flex items-center justify-center bg-slate-100">
-
-      {/* Toast Container */}
-      <ToastContainer
-        position="top-right"
-        autoClose={3000}
-        hideProgressBar={false}
-        newestOnTop
-        closeOnClick
-        pauseOnHover
-      />
 
       <div className="w-full max-w-md bg-white rounded-xl shadow-lg p-8">
 
@@ -117,7 +97,6 @@ function Login() {
           className="space-y-5"
         >
 
-          {/* Email */}
           <div>
             <label className="block mb-2 font-medium">
               Email
@@ -133,7 +112,6 @@ function Login() {
             />
           </div>
 
-          {/* Password */}
           <div>
             <label className="block mb-2 font-medium">
               Password
@@ -149,7 +127,6 @@ function Login() {
             />
           </div>
 
-          {/* Login button */}
           <button
             type="submit"
             disabled={loading}

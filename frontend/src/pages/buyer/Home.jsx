@@ -350,8 +350,7 @@ function Home() {
                   }`}
                 >
                   {category.name === "All"
-                    ? "🛍️"
-                    : "📦"}
+                     }
                 </div>
 
                 <h3 className="font-bold mt-4 truncate">

@@ -1,9 +1,11 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import API from "../../api/axios";
+import { useToast } from "../../context/ToastContext";
 
 function VendorRegistration() {
   const navigate = useNavigate();
+  const toast = useToast();
 
   const [formData, setFormData] = useState({
     name: "",
@@ -12,7 +14,6 @@ function VendorRegistration() {
   });
 
   const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState("");
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -27,33 +28,53 @@ function VendorRegistration() {
     e.preventDefault();
 
     setLoading(true);
-    setMessage("");
 
     try {
       console.log("VENDOR REGISTER DATA:", formData);
 
-      // Send vendor registration request
-      const res = await API.post("/auth/register/vendor", formData);
+      // Send vendor data to backend
+      const res = await API.post(
+        "/auth/register/vendor",
+        formData
+      );
 
-      setMessage(
+      console.log("VENDOR REGISTER RESPONSE:", res.data);
+
+      // Backend success message
+      toast.success(
         res.data.message || "Vendor registration successful"
       );
 
+      // Redirect to login
       setTimeout(() => {
         navigate("/login");
       }, 1500);
 
     } catch (err) {
-      console.log("VENDOR REGISTER ERROR:", err.response?.data);
+      console.log(
+        "VENDOR REGISTER ERROR:",
+        err.response?.data
+      );
 
-      if (err.response?.data?.errors?.length) {
-        setMessage(err.response.data.errors[0].msg);
-      } else {
-        setMessage(
-          err.response?.data?.message ||
-          "Vendor registration failed"
-        );
+      const responseData = err.response?.data;
+
+      // Backend validation errors
+      if (
+        responseData?.errors &&
+        responseData.errors.length > 0
+      ) {
+        responseData.errors.forEach((error) => {
+          toast.error(error.msg);
+        });
+
+        return;
       }
+
+      // Backend normal error
+      toast.error(
+        responseData?.message ||
+        "Vendor registration failed"
+      );
 
     } finally {
       setLoading(false);
@@ -73,13 +94,6 @@ function VendorRegistration() {
         <p className="text-center text-gray-500 mb-6">
           Create your vendor account and start selling products.
         </p>
-
-        {/* Message */}
-        {message && (
-          <div className="mb-5 p-3 rounded-lg bg-blue-100 text-blue-700">
-            {message}
-          </div>
-        )}
 
         <form
           onSubmit={handleSubmit}
@@ -109,7 +123,7 @@ function VendorRegistration() {
             </label>
 
             <input
-              type="email"
+              type="text"
               name="email"
               value={formData.email}
               onChange={handleChange}
@@ -134,6 +148,7 @@ function VendorRegistration() {
             />
           </div>
 
+          {/* Submit */}
           <button
             type="submit"
             disabled={loading}
@@ -146,7 +161,7 @@ function VendorRegistration() {
 
         </form>
 
-        {/* Normal registration */}
+        {/* Buyer Registration */}
         <p className="mt-6 text-center text-gray-600">
           Want to create a buyer account?
 

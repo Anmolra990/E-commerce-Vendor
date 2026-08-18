@@ -1,24 +1,28 @@
 import paymentService from "./payment.service.js";
 
 class PaymentController {
-  async makePayment(req, res, next) {
+
+  // Create Stripe Checkout Session
+  async createCheckoutSession(req, res, next) {
     try {
-      const payment = await paymentService.makePayment(
+      const result = await paymentService.createCheckoutSession(
         req.user._id,
-        req.body.orderId,
-        req.body.method
+        req.body.orderId
       );
 
       res.status(201).json({
         success: true,
-        message: "Payment Successful",
-        data: payment,
+        message: "Stripe checkout session created",
+        data: result,
       });
+
     } catch (error) {
       next(error);
     }
   }
 
+
+  // Get all payments
   async getPayments(req, res, next) {
     try {
       const payments = await paymentService.getPayments();
@@ -27,19 +31,25 @@ class PaymentController {
         success: true,
         data: payments,
       });
+
     } catch (error) {
       next(error);
     }
   }
 
+
+ 
   async getPayment(req, res, next) {
     try {
-      const payment = await paymentService.getPayment(req.params.id);
+      const payment = await paymentService.getPayment(
+        req.params.id
+      );
 
       res.status(200).json({
         success: true,
         data: payment,
       });
+
     } catch (error) {
       next(error);
     }

@@ -2,145 +2,405 @@ import { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import API from "../../api/axios";
 import Navbar from "../../components/Navbar";
+import { useAuth } from "../../context/AuthContext";
 import SavedAddressBook from "../../components/SavedAddressBook";
-import { formatDeliveryAddress } from "../../utils/deliveryAddress";
 
 function Checkout() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const { token, user } = useAuth();
+
   const [cart, setCart] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [placing, setPlacing] = useState(false);
-  const [message, setMessage] = useState("");
-  const [paymentMethod, setPaymentMethod] = useState("COD");
-  const [deliveryAddress, setDeliveryAddress] = useState(null);
-  const location = useLocation();
+  const [paymentLoading, setPaymentLoading] = useState(false);
+
+  const [paymentMethod, setPaymentMethod] = useState("STRIPE");
+
+  // Address object passed from Cart.jsx via navigate("/checkout", { state: { deliveryAddress } })
+  // Shape assumed: { _id, street, city, state, pincode } — adjust to match SavedAddressBook's actual fields
+  const [deliveryAddress, setDeliveryAddress] = useState(
+    location.state?.deliveryAddress || null
+  );
 
   useEffect(() => {
     fetchCart();
-    if (location.state?.deliveryAddress) {
-      setDeliveryAddress(location.state.deliveryAddress);
-    }
   }, []);
+
+  // If the user lands on /checkout directly (e.g. refresh) without state,
+  // location.state will be null and deliveryAddress stays null.
+  // We warn them and send them back to the cart to pick one.
+  useEffect(() => {
+    if (!location.state?.deliveryAddress) {
+      console.warn(
+        "No delivery address found in navigation state. Redirecting to cart."
+      );
+    }
+  }, [location.state]);
 
   const fetchCart = async () => {
     try {
       const res = await API.get("/cart");
+
       setCart(res.data.data);
     } catch (error) {
-      console.log(error);
-      setMessage(error.response?.data?.message || "Unable to load cart.");
+      console.log("CART ERROR:", error.response?.data);
     } finally {
       setLoading(false);
     }
   };
 
-  const handlePlaceOrder = async () => {
-    if (!cart?.items?.length) return;
+  const getTotal = () => {
+    if (!cart?.items) return 0;
 
-    setPlacing(true);
-    setMessage("");
+    return cart.items.reduce((total, item) => {
+      return total + item.productId.price * item.quantity;
+    }, 0);
+  };
+
+  // Formats the address object into a single string for the order payload.
+  // Adjust field names here to match your actual SavedAddressBook/address schema.
+  const formatAddress = (address) => {
+    if (!address) return "";
+
+    if (typeof address === "string") return address;
+
+    const { street, city, state, pincode } = address;
+
+    return [street, city, state, pincode]
+      .filter(Boolean)
+      .join(", ");
+  };
+
+  const handlePlaceOrder = async () => {
+    if (!token) {
+      navigate("/login");
+      return;
+    }
+
+    if (user?.role !== "buyer") {
+      alert("Only buyers can place orders.");
+      return;
+    }
+
+    if (!deliveryAddress) {
+      alert("Please select a delivery address.");
+      navigate("/cart");
+      return;
+    }
+
+    if (!cart?.items?.length) {
+      alert("Your cart is empty.");
+      return;
+    }
 
     try {
-      const items = cart.items.map((item) => ({
-        productId: item.productId._id,
-        quantity: item.quantity,
-      }));
+      setPaymentLoading(true);
 
-      if (!deliveryAddress) {
-        setMessage("Please select or add a delivery address.");
-        setPlacing(false);
+      // ==============================
+      // STEP 1: CREATE ORDER
+      // ==============================
+
+      const orderResponse = await API.post("/orders", {
+        items: cart.items.map((item) => ({
+          productId: item.productId._id,
+          quantity: item.quantity,
+        })),
+
+        paymentMethod: paymentMethod,
+
+        // Sending both the formatted string and the raw address id in case
+        // your backend expects one or the other. Remove whichever isn't needed.
+        deliveryAddress: formatAddress(deliveryAddress),
+        addressId: deliveryAddress?._id,
+      });
+
+      console.log("ORDER RESPONSE:", orderResponse.data);
+
+      const order = orderResponse.data.data;
+
+      // ==============================
+      // COD
+      // ==============================
+
+      if (paymentMethod === "COD") {
+        alert("Order placed successfully!");
+
+        navigate("/orders");
+
         return;
       }
 
-      await API.post("/orders", {
-        items,
-        paymentMethod,
-        deliveryAddress: formatDeliveryAddress(deliveryAddress),
-      });
-      alert(`Order placed successfully via ${paymentMethod}.`);
-      navigate("/orders");
+      // ==============================
+      // STRIPE
+      // ==============================
+
+      const paymentResponse = await API.post(
+        "/payments/create-checkout-session",
+        {
+          orderId: order._id,
+        }
+      );
+
+      console.log(
+        "STRIPE RESPONSE:",
+        paymentResponse.data
+      );
+
+      const checkoutUrl =
+        paymentResponse.data.data.url;
+
+      if (!checkoutUrl) {
+        throw new Error(
+          "Stripe checkout URL not received"
+        );
+      }
+
+      // Redirect buyer to Stripe
+      window.location.href = checkoutUrl;
+
     } catch (error) {
-      console.log(error);
-      setMessage(error.response?.data?.message || "Unable to place order.");
+      console.log(
+        "CHECKOUT ERROR:",
+        error.response?.data || error
+      );
+
+      alert(
+        error.response?.data?.message ||
+        "Unable to place order"
+      );
+
     } finally {
-      setPlacing(false);
+      setPaymentLoading(false);
     }
   };
 
   if (loading) {
-    return <p className="text-center mt-16">Loading checkout...</p>;
+    return (
+      <div className="p-10 text-center">
+        Loading checkout...
+      </div>
+    );
   }
 
-  const total = cart?.items?.reduce(
-    (sum, item) => sum + item.productId.price * item.quantity,
-    0
-  );
+  if (!cart?.items?.length) {
+    return (
+      <>
+        <Navbar />
+
+        <div className="min-h-screen flex items-center justify-center">
+          <div className="text-center">
+            <h2 className="text-2xl font-bold">
+              Your cart is empty
+            </h2>
+
+            <button
+              onClick={() => navigate("/home")}
+              className="mt-5 bg-blue-600 text-white px-6 py-3 rounded-lg"
+            >
+              Continue Shopping
+            </button>
+          </div>
+        </div>
+      </>
+    );
+  }
 
   return (
     <>
       <Navbar />
 
-      <div className="max-w-5xl mx-auto p-8">
-        <h1 className="text-4xl font-bold mb-6">Checkout</h1>
+      <div className="max-w-6xl mx-auto p-6">
 
-        {message && (
-          <div className="mb-4 p-3 rounded bg-red-100 text-red-700">{message}</div>
-        )}
+        <h1 className="text-3xl font-bold mb-8">
+          Checkout
+        </h1>
 
-        {cart?.items?.length === 0 ? (
-          <p className="text-gray-600">Your cart is empty.</p>
-        ) : (
-          <div className="space-y-6">
-            {cart.items.map((item) => (
-              <div key={item.productId._id} className="border rounded-xl p-5 bg-white shadow-sm">
-                <div className="flex flex-col md:flex-row md:justify-between gap-4">
-                  <div>
-                    <h2 className="text-2xl font-semibold">{item.productId.title}</h2>
-                    <p className="text-gray-500">Quantity: {item.quantity}</p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-lg font-semibold">₹ {item.productId.price}</p>
-                    <p className="text-sm text-gray-500">Subtotal: ₹ {item.productId.price * item.quantity}</p>
-                  </div>
-                </div>
-              </div>
-            ))}
+        <div className="grid md:grid-cols-2 gap-8">
 
-            <div className="rounded-xl border p-6 bg-slate-50">
-              <div className="flex justify-between text-xl font-semibold">
-                <span>Total</span>
-                <span>₹ {total.toFixed(2)}</span>
+          {/* =========================
+              DELIVERY ADDRESS
+          ========================== */}
+
+          <div>
+
+            <div className="bg-slate-50 rounded-3xl border border-slate-200 p-5 mb-6">
+
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-slate-900">
+                  Delivery Address
+                </h3>
+
+                <button
+                  onClick={() => navigate("/cart")}
+                  className="text-sm font-semibold text-blue-600 hover:text-blue-700"
+                >
+                  Change
+                </button>
               </div>
 
-              <div className="mt-6">
+              {deliveryAddress ? (
+                 <div className="mt-6">
                 <label className="block mb-3 font-semibold">Delivery Address</label>
                 <SavedAddressBook selectedAddressId={deliveryAddress?._id} onSelect={setDeliveryAddress} />
               </div>
 
-              <div className="mt-6">
-                <label className="block mb-2 font-semibold">Payment Method</label>
-                <select
-                  value={paymentMethod}
-                  onChange={(e) => setPaymentMethod(e.target.value)}
-                  className="w-full border rounded-lg p-3"
-                >
-                  <option value="COD">Cash on Delivery</option>
-                  <option value="UPI">UPI</option>
-                  <option value="Card">Card</option>
-                  <option value="Net Banking">Net Banking</option>
-                </select>
-              </div>
+              ) : (
+                <div className="text-sm">
+                  <p className="text-rose-600 mb-3">
+                    No delivery address selected.
+                  </p>
 
-              <button
-                onClick={handlePlaceOrder}
-                disabled={placing}
-                className="mt-6 w-full bg-green-600 text-white p-4 rounded-lg hover:bg-green-700 disabled:bg-gray-400"
-              >
-                {placing ? "Placing order..." : "Place Order"}
-              </button>
+                  <button
+                    onClick={() => navigate("/cart")}
+                    className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-semibold"
+                  >
+                    Select Address
+                  </button>
+                </div>
+              )}
+
             </div>
+
+
+            {/* =========================
+                PAYMENT METHOD
+            ========================== */}
+
+            <div className="bg-white border rounded-3xl p-5">
+
+              <h3 className="text-lg font-semibold mb-4">
+                Payment Method
+              </h3>
+
+              {/* Stripe */}
+
+              <label className="flex items-center gap-3 border rounded-xl p-4 cursor-pointer mb-3">
+
+                <input
+                  type="radio"
+                  value="STRIPE"
+                  checked={paymentMethod === "STRIPE"}
+                  onChange={(e) =>
+                    setPaymentMethod(e.target.value)
+                  }
+                />
+
+                <div>
+                  <p className="font-semibold">
+                    Pay Online
+                  </p>
+
+                  <p className="text-sm text-gray-500">
+                    Secure payment with Stripe
+                  </p>
+                </div>
+
+              </label>
+
+
+              {/* COD */}
+
+              <label className="flex items-center gap-3 border rounded-xl p-4 cursor-pointer">
+
+                <input
+                  type="radio"
+                  value="COD"
+                  checked={paymentMethod === "COD"}
+                  onChange={(e) =>
+                    setPaymentMethod(e.target.value)
+                  }
+                />
+
+                <div>
+                  <p className="font-semibold">
+                    Cash on Delivery
+                  </p>
+
+                  <p className="text-sm text-gray-500">
+                    Pay when your order arrives
+                  </p>
+                </div>
+
+              </label>
+
+            </div>
+
           </div>
-        )}
+
+
+          {/* =========================
+              ORDER SUMMARY
+          ========================== */}
+
+          <div className="bg-white border rounded-3xl p-6 h-fit">
+
+            <h2 className="text-xl font-bold mb-5">
+              Order Summary
+            </h2>
+
+            <div className="space-y-4">
+
+              {cart.items.map((item) => (
+
+                <div
+                  key={item.productId._id}
+                  className="flex justify-between border-b pb-3"
+                >
+
+                  <div>
+
+                    <p className="font-medium">
+                      {item.productId.title}
+                    </p>
+
+                    <p className="text-sm text-gray-500">
+                      Quantity: {item.quantity}
+                    </p>
+
+                  </div>
+
+                  <p className="font-semibold">
+                    ₹{" "}
+                    {item.productId.price *
+                      item.quantity}
+                  </p>
+
+                </div>
+
+              ))}
+
+            </div>
+
+
+            <div className="flex justify-between mt-6 text-xl font-bold">
+
+              <span>Total</span>
+
+              <span>
+                ₹ {getTotal()}
+              </span>
+
+            </div>
+
+
+            <button
+              onClick={handlePlaceOrder}
+              disabled={paymentLoading || !deliveryAddress}
+              className="w-full mt-6 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white py-3 rounded-xl font-semibold"
+            >
+
+              {paymentLoading
+                ? "Processing..."
+                : paymentMethod === "STRIPE"
+                ? "Pay with Stripe"
+                : "Place Order"}
+
+            </button>
+
+          </div>
+
+        </div>
+
       </div>
     </>
   );

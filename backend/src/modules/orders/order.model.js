@@ -44,16 +44,32 @@ const orderSchema = new mongoose.Schema(
     },
 
     paymentStatus: {
-      type: String,
-      enum: ["Pending", "Paid"],
-      default: "Pending",
-    },
+  type: String,
+  enum: ["Pending", "Paid"],
+  default: "Pending",
+},
 
-    paymentMethod: {
-      type: String,
-      enum: ["UPI", "Card", "COD", "Net Banking"],
-      default: "COD",
-    },
+paymentMethod: {
+  type: String,
+  enum: ["UPI", "Card", "COD", "Net Banking"],
+  default: "COD",
+},
+
+stripeSessionId: {
+  type: String,
+  default: null,
+},
+
+stripePaymentIntentId: {
+  type: String,
+  default: null,
+},
+
+paidAt: {
+  type: Date,
+  default: null,
+},
+
     deliveryAddress: {
       type: String,
       trim: true,

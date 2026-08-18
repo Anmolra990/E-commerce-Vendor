@@ -1,10 +1,11 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import toast from "react-hot-toast";
 import API from "../../api/axios";
+import { useToast } from "../../context/ToastContext";
 
 function Register() {
   const navigate = useNavigate();
+  const toast = useToast();
 
   const [formData, setFormData] = useState({
     name: "",
@@ -15,9 +16,11 @@ function Register() {
   const [loading, setLoading] = useState(false);
 
   const handleChange = (e) => {
+    const { name, value } = e.target;
+
     setFormData((prev) => ({
       ...prev,
-      [e.target.name]: e.target.value,
+      [name]: value,
     }));
   };
 
@@ -29,17 +32,17 @@ function Register() {
     try {
       console.log("REGISTER DATA:", formData);
 
-      // Backend handles validation
+      // Send data directly to backend
       const res = await API.post("/auth/register", formData);
 
       console.log("REGISTER RESPONSE:", res.data);
 
-      // Success toast
+      // Backend success message
       toast.success(
         res.data.message || "Registration successful"
       );
 
-      // Go to login
+      // Go to login after successful registration
       setTimeout(() => {
         navigate("/login");
       }, 1500);
@@ -47,34 +50,29 @@ function Register() {
     } catch (err) {
       console.log("REGISTER ERROR:", err.response?.data);
 
-      /*
-        Backend validation response:
+      const responseData = err.response?.data;
 
-        {
-          success: false,
-          errors: [
-            {
-              msg: "Name is required",
-              path: "name"
-            }
-          ]
-        }
-      */
-
-      if (err.response?.data?.errors?.length) {
-
-        // Show every backend validation error
-        err.response.data.errors.forEach((error) => {
+      // ==============================
+      // BACKEND VALIDATION ERRORS
+      // ==============================
+      if (
+        responseData?.errors &&
+        responseData.errors.length > 0
+      ) {
+        // Show backend validation messages
+        responseData.errors.forEach((error) => {
           toast.error(error.msg);
         });
 
-      } else {
-        // Normal backend error
-        toast.error(
-          err.response?.data?.message ||
-          "Registration failed"
-        );
+        return;
       }
+
+      // ==============================
+      // BACKEND NORMAL ERROR
+      // ==============================
+      toast.error(
+        responseData?.message || "Registration failed"
+      );
 
     } finally {
       setLoading(false);
@@ -95,7 +93,7 @@ function Register() {
           className="space-y-5"
         >
 
-          {/* Name */}
+          {/* NAME */}
           <div>
             <label className="block mb-2 font-medium">
               Name
@@ -111,14 +109,14 @@ function Register() {
             />
           </div>
 
-          {/* Email */}
+          {/* EMAIL */}
           <div>
             <label className="block mb-2 font-medium">
               Email
             </label>
 
             <input
-              type="email"
+              type="text"
               name="email"
               value={formData.email}
               onChange={handleChange}
@@ -127,7 +125,7 @@ function Register() {
             />
           </div>
 
-          {/* Password */}
+          {/* PASSWORD */}
           <div>
             <label className="block mb-2 font-medium">
               Password
@@ -143,7 +141,7 @@ function Register() {
             />
           </div>
 
-          {/* Register */}
+          {/* REGISTER BUTTON */}
           <button
             type="submit"
             disabled={loading}
@@ -154,19 +152,19 @@ function Register() {
 
         </form>
 
-        {/* Login */}
+        {/* LOGIN */}
         <p className="mt-5 text-center">
           Already have an account?
 
           <Link
             to="/login"
-            className="text-blue-600 ml-2 font-semibold"
+            className="text-blue-600 ml-2 font-semibold hover:underline"
           >
             Login
           </Link>
         </p>
 
-        {/* Vendor Registration */}
+        {/* VENDOR REGISTRATION */}
         <p className="mt-5 text-center text-gray-600">
           Want to sell products?
 
