@@ -58,14 +58,14 @@ class OrderService {
         totalAmount += product.price * quantity;
       }
 
-      const order = await OrderRepository.createOrder({
-        userId,
-        items: orderItems,
-        totalAmount,
-        paymentMethod,
-        paymentStatus: paymentMethod === "COD" ? "Pending" : "Paid",
-        deliveryAddress,
-      });
+ const order = await OrderRepository.createOrder({
+  userId,
+  items: orderItems,
+  totalAmount,
+  paymentMethod,
+  paymentStatus: "Pending",
+  deliveryAddress,
+});
 
       orderCreated = true;
       await cartRepository.clearCart(userId);

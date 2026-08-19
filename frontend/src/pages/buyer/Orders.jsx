@@ -5,7 +5,8 @@ import Navbar from "../../components/Navbar";
 function Orders() {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
-
+  
+  
   const statusColors = {
     Pending: "bg-yellow-100 text-yellow-700",
     Confirmed: "bg-blue-100 text-blue-700",

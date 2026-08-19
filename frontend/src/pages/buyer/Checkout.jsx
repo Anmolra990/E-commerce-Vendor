@@ -96,9 +96,7 @@ function Checkout() {
     try {
       setPaymentLoading(true);
 
-      // ==============================
-      // STEP 1: CREATE ORDER
-      // ==============================
+   
 
       const orderResponse = await API.post("/orders", {
         items: cart.items.map((item) => ({
@@ -108,8 +106,6 @@ function Checkout() {
 
         paymentMethod: paymentMethod,
 
-        // Sending both the formatted string and the raw address id in case
-        // your backend expects one or the other. Remove whichever isn't needed.
         deliveryAddress: formatAddress(deliveryAddress),
         addressId: deliveryAddress?._id,
       });
@@ -118,9 +114,7 @@ function Checkout() {
 
       const order = orderResponse.data.data;
 
-      // ==============================
-      // COD
-      // ==============================
+
 
       if (paymentMethod === "COD") {
         alert("Order placed successfully!");
@@ -130,9 +124,7 @@ function Checkout() {
         return;
       }
 
-      // ==============================
-      // STRIPE
-      // ==============================
+    
 
       const paymentResponse = await API.post(
         "/payments/create-checkout-session",
@@ -155,7 +147,7 @@ function Checkout() {
         );
       }
 
-      // Redirect buyer to Stripe
+  
       window.location.href = checkoutUrl;
 
     } catch (error) {
@@ -217,9 +209,6 @@ function Checkout() {
 
         <div className="grid md:grid-cols-2 gap-8">
 
-          {/* =========================
-              DELIVERY ADDRESS
-          ========================== */}
 
           <div>
 

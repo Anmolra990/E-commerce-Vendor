@@ -9,6 +9,8 @@ import ProductDetails from "../pages/buyer/ProductDetails";
 import Cart from "../pages/buyer/Cart";
 import Checkout from "../pages/buyer/Checkout";
 import Orders from "../pages/buyer/Orders";
+import PaymentSuccess from "../pages/buyer/PaymentSuccess";
+import PaymentCancelled from "../pages/buyer/PaymentCancelled";
 
 
 import VendorDashboard from "../pages/vendor/Dashboard";
@@ -68,6 +70,24 @@ function AppRoutes() {
           element={
             <RoleRoute roles={["buyer", "vendor"]}>
               <Orders />
+            </RoleRoute>
+          }
+        />
+
+        <Route
+          path="/payment-success"
+          element={
+            <RoleRoute roles={["buyer"]}>
+              <PaymentSuccess />
+            </RoleRoute>
+          }
+        />
+
+        <Route
+          path="/payment-cancelled"
+          element={
+            <RoleRoute roles={["buyer"]}>
+              <PaymentCancelled />
             </RoleRoute>
           }
         />
