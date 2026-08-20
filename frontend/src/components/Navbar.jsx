@@ -20,7 +20,7 @@ function Navbar({ cartCount = 0 }) {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
         
         {/* Brand Logo */}
-        <Link to="/buyer" className="flex items-center gap-2 group">
+        <Link to="/home" className="flex items-center gap-2 group">
           <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center text-white font-black text-xl shadow-md shadow-blue-500/20 group-hover:scale-105 transition-transform">
             E
           </div>
@@ -41,6 +41,36 @@ function Navbar({ cartCount = 0 }) {
           >
             Home
           </Link>
+
+
+          {/* Premium Membership */}
+{user?.role === "buyer" && (
+  <Link
+    to="/membership"
+    className={`group relative ml-1 px-4 py-2 rounded-xl transition-all duration-300 flex items-center gap-2
+      ${
+        isActive("/membership")
+          ? "bg-gradient-to-r from-amber-100 to-purple-100 text-purple-700 shadow-sm"
+          : "text-slate-700 hover:text-purple-700 hover:bg-gradient-to-r hover:from-amber-50 hover:to-purple-50"
+      }`}
+  >
+    {/* Crown */}
+    <svg
+      className="w-4 h-4 text-amber-500 group-hover:scale-110 transition-transform"
+      fill="currentColor"
+      viewBox="0 0 24 24"
+    >
+      <path d="M5 20h14v2H5v-2zm14-3H5l-1-9 5 3 3-6 3 6 5-3-1 9z" />
+    </svg>
+
+    <span>Premium</span>
+
+   
+    <span className="absolute -top-2 -right-2 px-1.5 py-0.5 text-[8px] font-black tracking-wide text-white rounded-full bg-gradient-to-r from-amber-500 to-purple-600 shadow-sm">
+      PRO
+    </span>
+  </Link>
+)}
 
           {/* Role Specific Routes */}
           {user?.role === "vendor" && (

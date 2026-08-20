@@ -20,7 +20,35 @@ class PaymentController {
       next(error);
     }
   }
+ 
 
+async createMembershipCheckoutSession(
+  req,
+  res,
+  next
+) {
+
+  try {
+
+    const result =
+      await paymentService
+        .createMembershipCheckoutSession(
+          req.user._id,
+          req.body.membershipId
+        );
+
+    res.status(201).json({
+      success: true,
+      message:
+        "Membership Stripe checkout session created",
+
+      data: result,
+    });
+
+  } catch (error) {
+    next(error);
+  }
+}
 
   // Get all payments
   async getPayments(req, res, next) {

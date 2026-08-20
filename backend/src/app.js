@@ -10,7 +10,7 @@ import cartRoutes from "./modules/cart/cart.routes.js";
 import paymentRoutes from "./modules/payments/payment.routes.js";
 import dashboardRoutes from "./modules/dashboard/dashboard.routes.js";
 import adminRoutes from "./modules/admin/admin.routes.js";
-
+import membershipRoutes from "./modules/membership/membership.routes.js";
 import { stripeWebhook } from "./modules/payments/payment.webhook.js";
 
 const app = express();
@@ -36,7 +36,10 @@ app.use(
 );
 
 
-
+app.use(
+  "/api/membership",
+  membershipRoutes
+);
 
 app.use("/api/auth", authRoutes);
 

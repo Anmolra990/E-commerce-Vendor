@@ -15,6 +15,12 @@ router.post(
   paymentController.createCheckoutSession
 );
 
+router.post(
+  "/create-membership-checkout-session",
+  authMiddleware,
+  authorize("buyer"),
+  paymentController.createMembershipCheckoutSession
+);
 
 
 router.get(

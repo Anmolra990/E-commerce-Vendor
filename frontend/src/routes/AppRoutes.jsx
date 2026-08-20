@@ -11,7 +11,8 @@ import Checkout from "../pages/buyer/Checkout";
 import Orders from "../pages/buyer/Orders";
 import PaymentSuccess from "../pages/buyer/PaymentSuccess";
 import PaymentCancelled from "../pages/buyer/PaymentCancelled";
-
+import MembershipSuccess from "../components/MembershipSuccess";
+import MembershipCancelled from "../components/MemberCancel";
 
 import VendorDashboard from "../pages/vendor/Dashboard";
 import VendorProducts from "../pages/vendor/Products";
@@ -24,7 +25,8 @@ import Profile from "../pages/Profile";
 
 import ProtectedRoute from "../components/ProtectedRoute";
 import RoleRoute from "../components/RoleRoute";
-
+import Membership from "../components/Membership";
+import MembershipCheckout from "../components/MembershipCheckout";
 
 function AppRoutes() {
   return (
@@ -42,8 +44,10 @@ function AppRoutes() {
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/vendor-registration" element={<VendorRegistration/>} />
-
-
+        <Route path="/membership" element={<Membership />} />
+        <Route path="/membership/checkout" element={<MembershipCheckout />} />
+        <Route path="/membership/checkout?plan=gold" element={<MembershipCheckout />} />
+        <Route path="/membership/checkout?plan=silver" element={<MembershipCheckout />} />
 
         <Route path="/product/:id" element={<ProductDetails />} />
 
@@ -91,6 +95,15 @@ function AppRoutes() {
             </RoleRoute>
           }
         />
+        <Route
+  path="/membership-success"
+  element={<MembershipSuccess />}
+/>
+
+<Route
+  path="/membership-cancelled"
+  element={<MembershipCancelled />}
+/>
 
         <Route
           path="/profile"
